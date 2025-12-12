@@ -36,6 +36,6 @@ metadata:
   namespace: ebisu-games-stg
 type: Opaque
 stringData:
-  database-url: "postgresql://postgres:postgres@localhost:5432/three_body_rng"
-  redis-url: "redis://localhost:6379"
+  database-url: "postgresql://10.157.66.3/three_body_rng"
+  redis-url: "redis://10.157.64.3:6379"
   api-secret-key: "CHANGE_ME_IN_PRODUCTION"
