@@ -25,10 +25,10 @@
     "kdf": "HKDF-SHA256",
     "salt": "tb-entropy-v1",
     "info": "spin",
-    "combinedSeedHex": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+    "combinedSeedHex": "362058e55bf11e32321255aba72af29185619c281c1dae748e6b5b9cbb51b12d"
   },
   "result": {
-    "reelStops": [14, 3, 9, 5, 19],
+    "reelStops": [13, 2, 19, 1, 16],
     "symbols": ["CHERRY", "BAR", "SEVEN", "WILD", "SCATTER"],
     "payout": {
       "bet": 100,
