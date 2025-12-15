@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #1a1625;
+  --foreground: #ffffff;
+  --font-display: system-ui, -apple-system, sans-serif;
+  --font-body: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-body);
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary to-red-700
+           text-white font-bold px-8 py-4 rounded-lg
+           hover:scale-105 transition-transform duration-200
+           shadow-lg hover:shadow-2xl cursor-pointer
+           inline-flex items-center justify-center;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-secondary text-secondary
+           px-6 py-3 rounded-lg
+           hover:bg-secondary hover:text-white
+           transition-colors duration-200 cursor-pointer
+           inline-flex items-center justify-center;
+  }
+
+  .grid-2-col {
+    @apply grid grid-cols-1 lg:grid-cols-2 gap-12;
+  }
+
+  .grid-3-col {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8;
+  }
+
+  .ht-display {
+    @apply font-display text-5xl md:text-6xl font-bold uppercase tracking-wide text-text-primary;
+  }
+
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .h2-section {
+    @apply font-display text-3xl md:text-4xl font-bold uppercase text-text-primary;
+  }
+
+  .h3-card {
+    @apply font-display text-xl md:text-2xl font-semibold text-text-primary;
+  }
+
+  .body-large {
+    @apply font-body text-lg text-text-secondary leading-relaxed;
+  }
+
+  .body-regular {
+    @apply font-body text-base text-text-secondary;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
