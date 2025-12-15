@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "game": {
+    "id": "kungfu_gem",
+    "mathVersion": "reels-v3",
+    "reelStripsHash": "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
+  },
+  "spin": {
+    "spinId": "spin_demo_001",
+    "sessionId": "session_abc123",
+    "timestamp": "2025-12-14T22:00:00Z",
+    "mode": "demo"
+  },
+  "commitment": {
+    "commitmentHash": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
+    "hashAlg": "SHA-256",
+    "publishedAt": "2025-12-14T21:59:59Z"
+  },
+  "seeds": {
+    "serverSeed": "hello",
+    "clientSeed": "world",
+    "nonce": 1
+  },
+  "mixing": {
+    "kdf": "HKDF-SHA256",
+    "salt": "tb-entropy-v1",
+    "info": "spin",
+    "combinedSeedHex": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+  },
+  "result": {
+    "reelStops": [14, 3, 9, 5, 19],
+    "symbols": ["CHERRY", "BAR", "SEVEN", "WILD", "SCATTER"],
+    "payout": {
+      "bet": 100,
+      "win": 250,
+      "currency": "USD"
+    }
+  },
+  "serverProof": {
+    "commitChainPrev": "0000000000000000000000000000000000000000000000000000000000000000",
+    "commitChainThis": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+  }
+}
