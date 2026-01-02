@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import GameLogo from './GameLogo';
 
 const games = [
@@ -29,12 +30,12 @@ export default function HeroSection() {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-center">
-          <button className="btn-primary">
+          <Link href="/play" className="btn-primary">
             PLAY DEMO
-          </button>
-          <button className="btn-secondary">
+          </Link>
+          <Link href="/verify" className="btn-secondary">
             Verify a Spin
-          </button>
+          </Link>
         </div>
       </div>
       

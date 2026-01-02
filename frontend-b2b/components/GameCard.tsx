@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 export interface GameCardProps {
+  id: string;
   title: string;
   imageUrl: string;
   description?: string;
@@ -12,6 +14,7 @@ export interface GameCardProps {
 }
 
 export default function GameCard({
+  id,
   title,
   imageUrl,
   description,
@@ -76,12 +79,13 @@ export default function GameCard({
           </div>
         )}
 
-        <button
+        <Link
+          href={`/play?game=${id}`}
           className="btn-primary w-full text-center"
           aria-label={`Play demo of ${title}`}
         >
           PLAY DEMO
-        </button>
+        </Link>
       </div>
     </article>
   );
