@@ -83,8 +83,11 @@ function generateRandomClientSeed(): string {
   if (typeof window !== 'undefined' && window.crypto) {
     window.crypto.getRandomValues(array);
   } else {
+    // Server-side rendering fallback - use timestamp-based seed
+    // This is only used for initial render, client will regenerate with crypto
+    const timestamp = Date.now();
     for (let i = 0; i < 16; i++) {
-      array[i] = Math.floor(Math.random() * 256);
+      array[i] = (timestamp >> (i % 8)) & 0xff;
     }
   }
   return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -364,8 +367,11 @@ function SpinningReel() {
 
   useEffect(() => {
     const symbols = Object.values(SYMBOL_EMOJIS);
+    let counter = 0;
     const interval = setInterval(() => {
-      setSymbol(symbols[Math.floor(Math.random() * symbols.length)]);
+      // Use deterministic cycling through symbols instead of Math.random()
+      setSymbol(symbols[counter % symbols.length]);
+      counter++;
     }, 80);
 
     return () => clearInterval(interval);
