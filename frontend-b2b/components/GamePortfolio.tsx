@@ -20,14 +20,15 @@ export default function GamePortfolio() {
         <div className="grid-3-col" role="list" aria-label="Game portfolio">
           {games.map((game) => (
             <div key={game.id} role="listitem">
-              <GameCard
-                title={game.title}
-                imageUrl={game.imageUrl}
-                description={game.description}
-                rtp={game.rtp}
-                reels={game.reels}
-                paylines={game.paylines}
-              />
+                <GameCard
+                  id={game.id}
+                  title={game.title}
+                  imageUrl={game.imageUrl}
+                  description={game.description}
+                  rtp={game.rtp}
+                  reels={game.reels}
+                  paylines={game.paylines}
+                />
             </div>
           ))}
         </div>
