@@ -1,18 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import SlotMachine from "@/components/SlotMachine";
 import { games } from "@/data/games";
 import Link from "next/link";
 
-export default function PlayPage() {
+function PlayPageContent() {
   const searchParams = useSearchParams();
   const gameIdParam = searchParams.get("game");
   
-  const [selectedGame, setSelectedGame] = useState<string | null>(
-    gameIdParam || null
-  );
+  const [selectedGame, setSelectedGame] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (gameIdParam) {
+      setSelectedGame(gameIdParam);
+    }
+  }, [gameIdParam]);
 
   const currentGame = games.find((g) => g.id === selectedGame);
 
@@ -125,5 +129,24 @@ export default function PlayPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="section-container py-12">
+      <div className="text-center">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-secondary border-t-transparent mb-4" />
+        <p className="body-regular">Loading game...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function PlayPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <PlayPageContent />
+    </Suspense>
   );
 }
