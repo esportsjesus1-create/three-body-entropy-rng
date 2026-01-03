@@ -7,27 +7,29 @@
  * - Limit reset after window
  * - Different IP addresses
  * - Remaining count accuracy
+ * 
+ * Note: These tests use mocked Upstash dependencies to test the middleware logic
+ * without requiring actual Redis connections.
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import type { RateLimitConfig, RateLimitResult } from '../src/types';
 
-const mockLimit = jest.fn();
-const mockFromEnv = jest.fn();
+const mockLimitFn = jest.fn<() => Promise<{ success: boolean; remaining: number; reset: number; limit: number }>>();
+const mockFromEnvFn = jest.fn();
 
 jest.mock('@upstash/redis', () => ({
   Redis: {
-    fromEnv: mockFromEnv,
+    fromEnv: () => mockFromEnvFn(),
   },
 }));
 
 jest.mock('@upstash/ratelimit', () => ({
   Ratelimit: jest.fn().mockImplementation(() => ({
-    limit: mockLimit,
+    limit: mockLimitFn,
   })),
 }));
 
 import { rateLimiter, createRateLimiter, resetRateLimiterState, DEFAULT_CONFIG } from '../src/limiter';
-import type { RateLimitConfig } from '../src/types';
 
 function createMockRequest(headers: Record<string, string> = {}): Request {
   const headersObj = new Headers();
@@ -44,12 +46,12 @@ describe('Rate Limiting Middleware', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetRateLimiterState();
-    mockFromEnv.mockReturnValue({});
+    mockFromEnvFn.mockReturnValue({});
   });
 
   describe('rateLimiter', () => {
     it('should allow requests when under the limit', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: true,
         remaining: 9,
         reset: Date.now() + 60000,
@@ -64,7 +66,7 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should block requests when limit is exceeded', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: false,
         remaining: 0,
         reset: Date.now() + 60000,
@@ -79,7 +81,7 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should return correct remaining count', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: true,
         remaining: 5,
         reset: Date.now() + 60000,
@@ -95,7 +97,7 @@ describe('Rate Limiting Middleware', () => {
 
     it('should include reset timestamp', async () => {
       const resetTime = Date.now() + 60000;
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: true,
         remaining: 8,
         reset: resetTime,
@@ -111,7 +113,7 @@ describe('Rate Limiting Middleware', () => {
 
   describe('IP Address Extraction', () => {
     it('should extract IP from x-forwarded-for header', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: true,
         remaining: 9,
         reset: Date.now() + 60000,
@@ -121,11 +123,11 @@ describe('Rate Limiting Middleware', () => {
       const req = createMockRequest({ 'x-forwarded-for': '10.0.0.1, 192.168.1.1' });
       await rateLimiter(req);
 
-      expect(mockLimit).toHaveBeenCalledWith('10.0.0.1');
+      expect(mockLimitFn).toHaveBeenCalledWith('10.0.0.1');
     });
 
     it('should extract IP from x-real-ip header when x-forwarded-for is not present', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: true,
         remaining: 9,
         reset: Date.now() + 60000,
@@ -135,11 +137,11 @@ describe('Rate Limiting Middleware', () => {
       const req = createMockRequest({ 'x-real-ip': '172.16.0.1' });
       await rateLimiter(req);
 
-      expect(mockLimit).toHaveBeenCalledWith('172.16.0.1');
+      expect(mockLimitFn).toHaveBeenCalledWith('172.16.0.1');
     });
 
     it('should use "unknown" when no IP headers are present', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: true,
         remaining: 9,
         reset: Date.now() + 60000,
@@ -149,11 +151,11 @@ describe('Rate Limiting Middleware', () => {
       const req = createMockRequest({});
       await rateLimiter(req);
 
-      expect(mockLimit).toHaveBeenCalledWith('unknown');
+      expect(mockLimitFn).toHaveBeenCalledWith('unknown');
     });
 
     it('should handle different IP addresses independently', async () => {
-      mockLimit
+      mockLimitFn
         .mockResolvedValueOnce({
           success: true,
           remaining: 9,
@@ -173,8 +175,8 @@ describe('Rate Limiting Middleware', () => {
       const result1 = await rateLimiter(req1);
       const result2 = await rateLimiter(req2);
 
-      expect(mockLimit).toHaveBeenCalledWith('192.168.1.1');
-      expect(mockLimit).toHaveBeenCalledWith('192.168.1.2');
+      expect(mockLimitFn).toHaveBeenCalledWith('192.168.1.1');
+      expect(mockLimitFn).toHaveBeenCalledWith('192.168.1.2');
       expect(result1.remaining).toBe(9);
       expect(result2.remaining).toBe(5);
     });
@@ -182,7 +184,7 @@ describe('Rate Limiting Middleware', () => {
 
   describe('Rate Limit Enforcement', () => {
     it('should enforce rate limit after max requests', async () => {
-      mockLimit
+      mockLimitFn
         .mockResolvedValueOnce({ success: true, remaining: 1, reset: Date.now() + 60000, limit: 10 })
         .mockResolvedValueOnce({ success: false, remaining: 0, reset: Date.now() + 60000, limit: 10 });
 
@@ -200,7 +202,7 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should allow requests after window reset', async () => {
-      mockLimit
+      mockLimitFn
         .mockResolvedValueOnce({ success: false, remaining: 0, reset: Date.now() + 60000, limit: 10 })
         .mockResolvedValueOnce({ success: true, remaining: 10, reset: Date.now() + 120000, limit: 10 });
 
@@ -219,7 +221,7 @@ describe('Rate Limiting Middleware', () => {
 
   describe('createRateLimiter', () => {
     it('should create a custom rate limiter with specified config', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: true,
         remaining: 4,
         reset: Date.now() + 60000,
@@ -256,7 +258,7 @@ describe('Rate Limiting Middleware', () => {
       const remainingCounts = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
       
       for (let i = 0; i < remainingCounts.length; i++) {
-        mockLimit.mockResolvedValueOnce({
+        mockLimitFn.mockResolvedValueOnce({
           success: remainingCounts[i] > 0,
           remaining: remainingCounts[i],
           reset: Date.now() + 60000,
@@ -274,7 +276,7 @@ describe('Rate Limiting Middleware', () => {
     });
 
     it('should return zero remaining when limit is reached', async () => {
-      mockLimit.mockResolvedValue({
+      mockLimitFn.mockResolvedValue({
         success: false,
         remaining: 0,
         reset: Date.now() + 60000,

@@ -145,11 +145,26 @@ interface RateLimitResult {
 
 ## Testing
 
-Run the tests with:
+Test files are provided in the `tests/` directory but require Jest to be configured in the project. The frontend-b2b project does not currently have Jest set up, so tests are excluded from TypeScript compilation.
+
+To run the tests when Jest is configured:
 
 ```bash
 npm test
 ```
+
+To set up Jest for this project, you would need to:
+
+1. Install Jest and related dependencies:
+   ```bash
+   npm install --save-dev jest @types/jest ts-jest
+   ```
+
+2. Create a `jest.config.js` file
+
+3. Add a test script to `package.json`
+
+The tests mock the Upstash dependencies to verify middleware logic without requiring actual Redis connections.
 
 ## License
 
