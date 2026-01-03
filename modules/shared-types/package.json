@@ -1,0 +1,29 @@
+{
+  "name": "@three-body-entropy/shared-types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for the Three-Body Entropy RNG system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "three-body",
+    "entropy",
+    "rng",
+    "types",
+    "typescript"
+  ],
+  "author": "Three-Body Entropy Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
