@@ -1,0 +1,76 @@
+name: Golden Vector Tests
+
+on:
+  push:
+    branches: [main, 'devin/**']
+  pull_request:
+    branches: [main, 'devin/**']
+
+jobs:
+  golden-vector-tests:
+    name: Golden Vectors - ${{ matrix.os }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: Linux
+            arch: amd64
+            runner: ubuntu-latest
+          - os: Linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: macOS
+            arch: arm64
+            runner: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install physics-engine dependencies
+        working-directory: modules/physics-engine
+        run: npm install
+
+      - name: Install shared-types dependencies
+        working-directory: modules/shared-types
+        run: npm install
+
+      - name: Install golden-vectors test dependencies
+        working-directory: tests/golden-vectors
+        run: npm install
+
+      - name: Install vitest
+        working-directory: tests/golden-vectors
+        run: npm install vitest --save-dev
+
+      - name: Run golden vector tests
+        working-directory: tests/golden-vectors
+        run: npx vitest run --reporter=verbose
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-vector-failure-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            tests/golden-vectors/fixtures/
+            tests/golden-vectors/*.log
+
+  cross-platform-verification:
+    name: Cross-Platform Verification
+    needs: golden-vector-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all platforms passed
+        run: |
+          echo "All golden vector tests passed on all platforms!"
+          echo "Cross-platform determinism verified for:"
+          echo "  - Linux amd64"
+          echo "  - Linux arm64"
+          echo "  - macOS arm64"
