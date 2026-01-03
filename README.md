@@ -33,6 +33,16 @@ This system generates cryptographically secure random numbers by simulating chao
 | `entropy-oracle` | Wrapper/orchestrator for entropy generation |
 | `integration-examples` | Complete slot machine examples |
 | `slot-machine-adapter` | Integration adapter for simple-slot-machine-game |
+| `shared-types` | Canonical TypeScript type definitions for all modules |
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Integration Contracts](docs/INTEGRATION_CONTRACTS.md) | Module contracts and data flow specifications |
+| [API Documentation](docs/API.md) | Full API reference |
+| [Architecture](docs/ARCHITECTURE.md) | System architecture overview |
+| [Shared Types](modules/shared-types/README.md) | Type definitions and usage guide |
 
 ## Quick Start
 
