@@ -1,0 +1,28 @@
+{
+  "name": "three-body-entropy-rng",
+  "version": "1.0.0",
+  "description": "Provably fair random number generation using three-body gravitational dynamics",
+  "private": true,
+  "scripts": {
+    "check:deps": "madge --circular --extensions ts,tsx modules/ frontend-b2b/",
+    "check:architecture": "depcruise --validate .dependency-cruiser.cjs modules/ frontend-b2b/lib/ frontend-b2b/components/ frontend-b2b/app/",
+    "check:all": "npm run check:deps && npm run check:architecture",
+    "lint": "cd frontend-b2b && npm run lint",
+    "build": "cd frontend-b2b && npm run build",
+    "test": "cd frontend-b2b && npm test"
+  },
+  "keywords": [
+    "three-body",
+    "entropy",
+    "rng",
+    "provably-fair",
+    "slot-machine"
+  ],
+  "author": "Three-Body Entropy Team",
+  "license": "MIT",
+  "devDependencies": {
+    "madge": "^7.0.0",
+    "dependency-cruiser": "^16.0.0",
+    "typescript": "^5.3.3"
+  }
+}
