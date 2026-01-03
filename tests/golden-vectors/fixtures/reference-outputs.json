@@ -1,0 +1,497 @@
+{
+  "metadata": {
+    "generatedAt": "2026-01-03T07:53:53.603Z",
+    "generatorVersion": "1.0.0",
+    "description": "Golden vector reference outputs for cross-platform determinism testing"
+  },
+  "scenario1": {
+    "name": "Figure-8 Orbit Configuration",
+    "description": "Classic figure-8 periodic orbit with equal masses",
+    "input": {
+      "masses": [
+        1,
+        1,
+        1
+      ],
+      "positions": [
+        {
+          "x": -1,
+          "y": 0,
+          "z": 0
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      ],
+      "velocities": [
+        {
+          "x": 0.347111,
+          "y": 0.532728,
+          "z": 0
+        },
+        {
+          "x": 0.347111,
+          "y": 0.532728,
+          "z": 0
+        },
+        {
+          "x": -0.694222,
+          "y": -1.065456,
+          "z": 0
+        }
+      ],
+      "duration": 1,
+      "timeStep": 0.001,
+      "energyDrift": -8.453661434295725e-15
+    },
+    "output": {
+      "time": 1,
+      "configuration": {
+        "bodies": [
+          {
+            "mass": 1,
+            "position": {
+              "x": -0.060684455814545984,
+              "y": 0.033344906169690776,
+              "z": 0
+            },
+            "velocity": {
+              "x": 1.1179082720019275,
+              "y": -0.6045965661223729,
+              "z": 0
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": 0.9105313105482813,
+              "y": 0.45416900822740003,
+              "z": 0
+            },
+            "velocity": {
+              "x": -0.49901830998678137,
+              "y": 0.33486000428225354,
+              "z": 0
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": -0.8498468547337358,
+              "y": -0.48751391439709146,
+              "z": 0
+            },
+            "velocity": {
+              "x": -0.6188899620151438,
+              "y": 0.2697365618401184,
+              "z": 0
+            }
+          }
+        ],
+        "gravitationalConstant": 1,
+        "softeningParameter": 0.01
+      },
+      "totalEnergy": -1.2870382527015711,
+      "stepCount": 1000
+    }
+  },
+  "scenario2": {
+    "name": "Lagrange Equilateral Triangle Configuration",
+    "description": "Lagrange equilateral triangle with equal masses",
+    "input": {
+      "masses": [
+        1,
+        1,
+        1
+      ],
+      "positions": [
+        {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        },
+        {
+          "x": -0.4999999999999998,
+          "y": 0.8660254037844387,
+          "z": 0
+        },
+        {
+          "x": -0.5000000000000004,
+          "y": -0.8660254037844385,
+          "z": 0
+        }
+      ],
+      "velocities": [
+        {
+          "x": 0,
+          "y": 1,
+          "z": 0
+        },
+        {
+          "x": -0.8660254037844387,
+          "y": -0.4999999999999998,
+          "z": 0
+        },
+        {
+          "x": 0.8660254037844385,
+          "y": -0.5000000000000004,
+          "z": 0
+        }
+      ],
+      "duration": 2,
+      "timeStep": 0.001,
+      "energyDrift": -4.306492389539229e-15
+    },
+    "output": {
+      "time": 2,
+      "configuration": {
+        "bodies": [
+          {
+            "mass": 1,
+            "position": {
+              "x": 0.21838276083534416,
+              "y": 1.5570014719200083,
+              "z": 0
+            },
+            "velocity": {
+              "x": -0.5717297404327872,
+              "y": 0.5028599885157888,
+              "z": 0
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": -1.4575942088301677,
+              "y": -0.5893757173280179,
+              "z": 0
+            },
+            "velocity": {
+              "x": -0.1496246543850318,
+              "y": -0.7465624735717721,
+              "z": 0
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": 1.2392114479948193,
+              "y": -0.9676257545919907,
+              "z": 0
+            },
+            "velocity": {
+              "x": 0.721354394817816,
+              "y": 0.24370248505598308,
+              "z": 0
+            }
+          }
+        ],
+        "gravitationalConstant": 1,
+        "softeningParameter": 0.01
+      },
+      "totalEnergy": -0.2320219407770866,
+      "stepCount": 2001
+    }
+  },
+  "scenario3": {
+    "name": "Custom Asymmetric Configuration",
+    "description": "Asymmetric masses in triangular arrangement",
+    "input": {
+      "masses": [
+        1.5,
+        1,
+        0.5
+      ],
+      "positions": [
+        {
+          "x": -2,
+          "y": 0,
+          "z": 0
+        },
+        {
+          "x": 1,
+          "y": 1.732,
+          "z": 0
+        },
+        {
+          "x": 1,
+          "y": -1.732,
+          "z": 0
+        }
+      ],
+      "velocities": [
+        {
+          "x": 0,
+          "y": 0.5,
+          "z": 0
+        },
+        {
+          "x": -0.433,
+          "y": -0.25,
+          "z": 0
+        },
+        {
+          "x": 0.433,
+          "y": -0.25,
+          "z": 0
+        }
+      ],
+      "duration": 0.5,
+      "timeStep": 0.001,
+      "energyDrift": 6.626289430057272e-16
+    },
+    "output": {
+      "time": 0.5,
+      "configuration": {
+        "bodies": [
+          {
+            "mass": 1.5,
+            "position": {
+              "x": -1.985947069287308,
+              "y": 0.25289042917762294,
+              "z": 0
+            },
+            "velocity": {
+              "x": 0.05755839886275403,
+              "y": 0.512141013982019,
+              "z": 0
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": 0.7688936879418236,
+              "y": 1.5936870436904211,
+              "z": 0
+            },
+            "velocity": {
+              "x": -0.4939231263142456,
+              "y": -0.3038529345480951,
+              "z": 0
+            }
+          },
+          {
+            "mass": 0.5,
+            "position": {
+              "x": 1.203553831978271,
+              "y": -1.8390453749137095,
+              "z": 0
+            },
+            "velocity": {
+              "x": 0.3821710560402311,
+              "y": -0.17871717284986785,
+              "z": 0
+            }
+          }
+        ],
+        "gravitationalConstant": 1,
+        "softeningParameter": 0.01
+      },
+      "totalEnergy": -0.4188705595884151,
+      "stepCount": 500
+    }
+  },
+  "scenario4": {
+    "name": "High-Precision Short Duration",
+    "description": "Short simulation with very small time step for precision testing",
+    "input": {
+      "masses": [
+        1,
+        1,
+        1
+      ],
+      "positions": [
+        {
+          "x": 0.97000436,
+          "y": -0.24308753,
+          "z": 0
+        },
+        {
+          "x": -0.97000436,
+          "y": 0.24308753,
+          "z": 0
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      ],
+      "velocities": [
+        {
+          "x": 0.466203685,
+          "y": 0.43236573,
+          "z": 0
+        },
+        {
+          "x": 0.466203685,
+          "y": 0.43236573,
+          "z": 0
+        },
+        {
+          "x": -0.93240737,
+          "y": -0.86473146,
+          "z": 0
+        }
+      ],
+      "duration": 0.1,
+      "timeStep": 0.0001,
+      "energyDrift": 1.7252403830378658e-16
+    },
+    "output": {
+      "time": 0.1,
+      "configuration": {
+        "bodies": [
+          {
+            "mass": 1,
+            "position": {
+              "x": 1.0108339632973597,
+              "y": -0.19863472634927226,
+              "z": 0
+            },
+            "velocity": {
+              "x": 0.3530627847130126,
+              "y": 0.4540343349867727,
+              "z": 0
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": -0.9170564161454503,
+              "y": 0.2844176259089032,
+              "z": 0
+            },
+            "velocity": {
+              "x": 0.5953094600799589,
+              "y": 0.3898939593169593,
+              "z": 0
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": -0.09377754715190872,
+              "y": -0.08578289955963082,
+              "z": 0
+            },
+            "velocity": {
+              "x": -0.9483722447929724,
+              "y": -0.8439282943037305,
+              "z": 0
+            }
+          }
+        ],
+        "gravitationalConstant": 1,
+        "softeningParameter": 0.01
+      },
+      "totalEnergy": -1.2870357493837878,
+      "stepCount": 1000
+    }
+  },
+  "scenario5": {
+    "name": "Long Duration Chaotic Evolution",
+    "description": "Extended simulation to test chaotic behavior and numerical stability",
+    "input": {
+      "masses": [
+        1.2,
+        0.8,
+        1
+      ],
+      "positions": [
+        {
+          "x": -1.5,
+          "y": 0.5,
+          "z": 0.1
+        },
+        {
+          "x": 1.5,
+          "y": -0.5,
+          "z": -0.1
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      ],
+      "velocities": [
+        {
+          "x": 0.2,
+          "y": 0.3,
+          "z": 0.05
+        },
+        {
+          "x": -0.2,
+          "y": -0.3,
+          "z": -0.05
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      ],
+      "duration": 5,
+      "timeStep": 0.001,
+      "energyDrift": -0.0000022743976786465077
+    },
+    "output": {
+      "time": 5,
+      "configuration": {
+        "bodies": [
+          {
+            "mass": 1.2,
+            "position": {
+              "x": -0.7994830110092516,
+              "y": 0.9298359107181103,
+              "z": 0.16787604831502922
+            },
+            "velocity": {
+              "x": 0.5951756499748985,
+              "y": -0.03734649654160815,
+              "z": -0.011861446220594497
+            }
+          },
+          {
+            "mass": 0.8,
+            "position": {
+              "x": 0.45258847785251194,
+              "y": -0.9650669356912289,
+              "z": -0.17080782050896287
+            },
+            "velocity": {
+              "x": -0.7216731984992234,
+              "y": -0.1354704415257057,
+              "z": -0.016838774458992456
+            }
+          },
+          {
+            "mass": 1,
+            "position": {
+              "x": 0.3973088309290689,
+              "y": 0.45625045569124983,
+              "z": 0.0751949984291347
+            },
+            "velocity": {
+              "x": -0.05687222117050477,
+              "y": 0.2731921490704931,
+              "z": 0.04770475503190689
+            }
+          }
+        ],
+        "gravitationalConstant": 1,
+        "softeningParameter": 0.01
+      },
+      "totalEnergy": -1.4328387232642452,
+      "stepCount": 5000
+    }
+  }
+}

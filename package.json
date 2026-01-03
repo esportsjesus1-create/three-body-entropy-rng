@@ -9,7 +9,8 @@
     "check:all": "npm run check:deps && npm run check:architecture",
     "lint": "cd frontend-b2b && npm run lint",
     "build": "cd frontend-b2b && npm run build",
-    "test": "cd frontend-b2b && npm test"
+    "test": "cd frontend-b2b && npm test",
+    "test:golden-vectors": "cd tests/golden-vectors && npx vitest run"
   },
   "keywords": [
     "three-body",
