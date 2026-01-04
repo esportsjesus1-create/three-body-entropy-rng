@@ -181,3 +181,98 @@ class TestAuditLog:
         counts = log.count_by_action()
         assert counts["commit_created"] == 2
         assert counts["commit_revealed"] == 1
+    
+    def test_detect_sequence_gaps_no_gaps(self, log):
+        """Test gap detection with no gaps."""
+        # Create and reveal all commitments
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_REVEALED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash2")
+        log.append(action=AuditAction.COMMIT_EXPIRED, commitment_hash="hash2")
+        
+        gaps = log.detect_sequence_gaps()
+        assert gaps["total_created"] == 2
+        assert gaps["total_revealed"] == 1
+        assert gaps["total_expired"] == 1
+        assert gaps["missing_count"] == 0
+        assert gaps["gap_detected"] is False
+    
+    def test_detect_sequence_gaps_with_gaps(self, log):
+        """Test gap detection with missing commitments."""
+        # Create 3 commitments, only reveal 1
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_REVEALED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash2")
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash3")
+        # hash2 and hash3 are never revealed or expired
+        
+        gaps = log.detect_sequence_gaps()
+        assert gaps["total_created"] == 3
+        assert gaps["total_revealed"] == 1
+        assert gaps["missing_count"] == 2
+        assert gaps["gap_detected"] is True
+        assert "hash2" in gaps["missing_hashes"]
+        assert "hash3" in gaps["missing_hashes"]
+    
+    def test_detect_sequence_gaps_empty(self, log):
+        """Test gap detection with empty log."""
+        gaps = log.detect_sequence_gaps()
+        assert gaps["total_created"] == 0
+        assert gaps["missing_count"] == 0
+        assert gaps["gap_detected"] is False
+    
+    def test_get_commitment_lifecycle_full(self, log):
+        """Test getting full commitment lifecycle."""
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_REVEALED, commitment_hash="hash1")
+        
+        lifecycle = log.get_commitment_lifecycle("hash1")
+        assert lifecycle["commitment_hash"] == "hash1"
+        assert lifecycle["status"] == "revealed"
+        assert lifecycle["created_at"] is not None
+        assert lifecycle["resolved_at"] is not None
+        assert len(lifecycle["entries"]) == 2
+    
+    def test_get_commitment_lifecycle_pending(self, log):
+        """Test getting lifecycle of pending commitment."""
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash1")
+        
+        lifecycle = log.get_commitment_lifecycle("hash1")
+        assert lifecycle["status"] == "pending"
+        assert lifecycle["resolved_at"] is None
+    
+    def test_get_commitment_lifecycle_expired(self, log):
+        """Test getting lifecycle of expired commitment."""
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_EXPIRED, commitment_hash="hash1")
+        
+        lifecycle = log.get_commitment_lifecycle("hash1")
+        assert lifecycle["status"] == "expired"
+        assert lifecycle["resolved_at"] is not None
+    
+    def test_get_commitment_lifecycle_unknown(self, log):
+        """Test getting lifecycle of unknown commitment."""
+        lifecycle = log.get_commitment_lifecycle("nonexistent")
+        assert lifecycle["status"] == "unknown"
+        assert lifecycle["entries"] == []
+    
+    def test_audit_summary(self, log):
+        """Test generating audit summary."""
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_REVEALED, commitment_hash="hash1")
+        log.append(action=AuditAction.COMMIT_CREATED, commitment_hash="hash2")
+        
+        summary = log.audit_summary()
+        assert summary["total_entries"] == 3
+        assert summary["chain_valid"] is True
+        assert summary["sequence_gaps"]["total_created"] == 2
+        assert summary["sequence_gaps"]["missing_count"] == 1  # hash2 not resolved
+        assert summary["oldest_entry_ms"] is not None
+        assert summary["newest_entry_ms"] is not None
+    
+    def test_audit_summary_empty(self, log):
+        """Test audit summary with empty log."""
+        summary = log.audit_summary()
+        assert summary["total_entries"] == 0
+        assert summary["chain_valid"] is True
+        assert summary["sequence_gaps"]["gap_detected"] is False

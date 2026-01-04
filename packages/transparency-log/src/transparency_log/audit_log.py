@@ -348,3 +348,144 @@ class AuditLog:
             """,
         )
         return {row["action"]: row["count"] for row in cursor.fetchall()}
+    
+    def detect_sequence_gaps(self) -> Dict[str, Any]:
+        """
+        Detect gaps in commitment sequence.
+        
+        Analyzes the audit log to find commitments that were created
+        but never revealed or expired. This helps detect if an operator
+        is selectively hiding unfavorable outcomes.
+        
+        Returns:
+            Dictionary with:
+                - total_created: Total commitments created
+                - total_revealed: Total commitments revealed
+                - total_expired: Total commitments expired
+                - missing_count: Commitments with no reveal/expire
+                - missing_hashes: List of commitment hashes with no outcome
+                - gap_detected: True if gaps found
+        """
+        # Count by action type
+        action_counts = self.count_by_action()
+        
+        total_created = action_counts.get(AuditAction.COMMIT_CREATED.value, 0)
+        total_revealed = action_counts.get(AuditAction.COMMIT_REVEALED.value, 0)
+        total_expired = action_counts.get(AuditAction.COMMIT_EXPIRED.value, 0)
+        
+        # Find commitments that were created but have no reveal/expire
+        cursor = self.db.execute(
+            """
+            SELECT DISTINCT commitment_hash FROM audit_log 
+            WHERE action = ? AND commitment_hash IS NOT NULL
+            """,
+            (AuditAction.COMMIT_CREATED.value,),
+        )
+        created_hashes = {row["commitment_hash"] for row in cursor.fetchall()}
+        
+        cursor = self.db.execute(
+            """
+            SELECT DISTINCT commitment_hash FROM audit_log 
+            WHERE action IN (?, ?) AND commitment_hash IS NOT NULL
+            """,
+            (AuditAction.COMMIT_REVEALED.value, AuditAction.COMMIT_EXPIRED.value),
+        )
+        resolved_hashes = {row["commitment_hash"] for row in cursor.fetchall()}
+        
+        missing_hashes = list(created_hashes - resolved_hashes)
+        missing_count = len(missing_hashes)
+        
+        return {
+            "total_created": total_created,
+            "total_revealed": total_revealed,
+            "total_expired": total_expired,
+            "missing_count": missing_count,
+            "missing_hashes": missing_hashes[:100],  # Limit to first 100
+            "gap_detected": missing_count > 0,
+        }
+    
+    def get_commitment_lifecycle(self, commitment_hash: str) -> Dict[str, Any]:
+        """
+        Get full lifecycle of a commitment.
+        
+        Returns all audit entries for a commitment, showing
+        its complete history from creation to resolution.
+        
+        Args:
+            commitment_hash: Commitment hash to trace
+            
+        Returns:
+            Dictionary with:
+                - commitment_hash: The commitment hash
+                - entries: List of audit entries
+                - status: Current status (pending/revealed/expired/unknown)
+                - created_at: Creation timestamp
+                - resolved_at: Resolution timestamp (if any)
+        """
+        entries = self.list_by_commitment(commitment_hash)
+        
+        if not entries:
+            return {
+                "commitment_hash": commitment_hash,
+                "entries": [],
+                "status": "unknown",
+                "created_at": None,
+                "resolved_at": None,
+            }
+        
+        status = "pending"
+        created_at = None
+        resolved_at = None
+        
+        for entry in entries:
+            if entry.action == AuditAction.COMMIT_CREATED.value:
+                created_at = entry.timestamp_ms
+            elif entry.action == AuditAction.COMMIT_REVEALED.value:
+                status = "revealed"
+                resolved_at = entry.timestamp_ms
+            elif entry.action == AuditAction.COMMIT_EXPIRED.value:
+                status = "expired"
+                resolved_at = entry.timestamp_ms
+        
+        return {
+            "commitment_hash": commitment_hash,
+            "entries": [e.to_dict() for e in entries],
+            "status": status,
+            "created_at": created_at,
+            "resolved_at": resolved_at,
+        }
+    
+    def audit_summary(self) -> Dict[str, Any]:
+        """
+        Generate comprehensive audit summary.
+        
+        Returns:
+            Dictionary with:
+                - total_entries: Total audit log entries
+                - action_counts: Counts by action type
+                - chain_valid: Whether hash chain is intact
+                - sequence_gaps: Gap detection results
+                - oldest_entry: Timestamp of oldest entry
+                - newest_entry: Timestamp of newest entry
+        """
+        total = self.count()
+        action_counts = self.count_by_action()
+        chain_valid = self.verify_chain()
+        gaps = self.detect_sequence_gaps()
+        
+        # Get timestamp range
+        cursor = self.db.execute(
+            "SELECT MIN(timestamp_ms) as oldest, MAX(timestamp_ms) as newest FROM audit_log"
+        )
+        row = cursor.fetchone()
+        oldest = row["oldest"] if row else None
+        newest = row["newest"] if row else None
+        
+        return {
+            "total_entries": total,
+            "action_counts": action_counts,
+            "chain_valid": chain_valid,
+            "sequence_gaps": gaps,
+            "oldest_entry_ms": oldest,
+            "newest_entry_ms": newest,
+        }

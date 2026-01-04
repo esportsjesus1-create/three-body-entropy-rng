@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { SpinResult, PendingCommitment, getSymbolEmoji } from "@/lib/demoEngine";
 
 interface SlotMachineProps {
@@ -15,6 +16,18 @@ interface SlotMachineProps {
   onViewDetails?: () => void;
 }
 
+function generateVerificationUrl(spin: SpinResult): string {
+  const params = new URLSearchParams();
+  spin.reels.forEach((reel, i) => {
+    params.set(`h${i}`, reel.commitment);
+    params.set(`s${i}`, reel.houseSeed);
+    params.set(`e${i}`, reel.entropyHex);
+  });
+  params.set("client", spin.reels[0]?.clientSeed || "");
+  params.set("ts", spin.timestamp);
+  return `${window.location.origin}/verify?${params.toString()}`;
+}
+
 export default function SlotMachine({
   balance,
   betAmount,
@@ -27,10 +40,23 @@ export default function SlotMachine({
   pendingCommitment,
   onViewDetails,
 }: SlotMachineProps) {
+  const [copied, setCopied] = useState(false);
   const reelSymbols = currentSpin?.symbols || ["fa", "zhong", "bai", "wild", "bonus"];
   
   const isVerified = currentSpin?.verificationStatus?.allCommitmentsValid && 
                      currentSpin?.verificationStatus?.timelineValid;
+
+  const handleCopyVerificationLink = async () => {
+    if (!currentSpin) return;
+    try {
+      const url = generateVerificationUrl(currentSpin);
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -83,13 +109,27 @@ export default function SlotMachine({
             </div>
           )}
           
-          {onViewDetails && currentSpin && !isSpinning && (
-            <button
-              onClick={onViewDetails}
-              className="text-xs text-gray-500 hover:text-gray-300 underline"
-            >
-              View Proof
-            </button>
+          {currentSpin && !isSpinning && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCopyVerificationLink}
+                className={`text-xs px-2 py-1 rounded ${
+                  copied 
+                    ? "bg-green-600 text-white" 
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                }`}
+              >
+                {copied ? "Copied!" : "Copy Proof Link"}
+              </button>
+              {onViewDetails && (
+                <button
+                  onClick={onViewDetails}
+                  className="text-xs text-gray-500 hover:text-gray-300 underline"
+                >
+                  View Proof
+                </button>
+              )}
+            </div>
           )}
         </div>
 
