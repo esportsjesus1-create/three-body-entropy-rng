@@ -14,6 +14,7 @@ def client():
             requests_per_second=100,
             burst_size=100,
         ),
+        enable_audit_log=False,  # Disable audit log for basic tests
     )
     return TestClient(app)
 
@@ -26,6 +27,7 @@ def strict_rate_limit_client():
             requests_per_second=1,
             burst_size=2,
         ),
+        enable_audit_log=False,  # Disable audit log for basic tests
     )
     return TestClient(app)
 
@@ -289,3 +291,111 @@ class TestComputeCommitmentHash:
         h1 = compute_commitment_hash("abc", "def", 1, 1000, [1, 2, 3])
         h2 = compute_commitment_hash("xyz", "def", 1, 1000, [1, 2, 3])
         assert h1 != h2
+
+
+class TestAuditEndpoints:
+    """Tests for Phase C audit trail endpoints."""
+    
+    @pytest.fixture
+    def audit_client(self):
+        """Create test client with audit logging enabled."""
+        # Use shared cache for in-memory SQLite to work across threads
+        app = create_app(
+            rate_limit_config=RateLimitConfig(
+                requests_per_second=100,
+                burst_size=100,
+            ),
+            db_path="file::memory:?cache=shared",
+            enable_audit_log=True,
+        )
+        return TestClient(app)
+    
+    def test_audit_summary(self, audit_client):
+        """Test audit summary endpoint."""
+        # Create some commitments to populate audit log
+        for _ in range(3):
+            audit_client.post("/commit", json={})
+        
+        response = audit_client.get("/api/audit/summary")
+        assert response.status_code == 200
+        data = response.json()
+        
+        assert "total_entries" in data
+        assert "action_counts" in data
+        assert "chain_valid" in data
+        assert data["total_entries"] >= 3
+    
+    def test_audit_commitment_lifecycle(self, audit_client):
+        """Test commitment lifecycle endpoint."""
+        # Create and reveal a commitment
+        commit_response = audit_client.post("/commit", json={})
+        commitment_hash = commit_response.json()["commitment_hash"]
+        
+        audit_client.post("/reveal", json={
+            "commitment_hash": commitment_hash,
+        })
+        
+        # Get lifecycle
+        response = audit_client.get(f"/api/audit/commitment/{commitment_hash}")
+        assert response.status_code == 200
+        data = response.json()
+        
+        assert "entries" in data
+        assert len(data["entries"]) >= 2  # At least commit + reveal
+    
+    def test_audit_recent_entries(self, audit_client):
+        """Test recent audit entries endpoint."""
+        # Create some commitments
+        for _ in range(5):
+            audit_client.post("/commit", json={})
+        
+        response = audit_client.get("/api/audit/recent?limit=10")
+        assert response.status_code == 200
+        data = response.json()
+        
+        assert "entries" in data
+        assert len(data["entries"]) >= 5
+    
+    def test_audit_gaps_detection(self, audit_client):
+        """Test sequence gap detection endpoint."""
+        # Create some commitments
+        for _ in range(3):
+            audit_client.post("/commit", json={})
+        
+        response = audit_client.get("/api/audit/gaps")
+        assert response.status_code == 200
+        data = response.json()
+        
+        # API returns gap_detected, missing_count, missing_hashes, etc.
+        assert "gap_detected" in data
+        assert "missing_count" in data
+    
+    def test_audit_verify_chain(self, audit_client):
+        """Test hash chain verification endpoint."""
+        # Create some commitments
+        for _ in range(3):
+            audit_client.post("/commit", json={})
+        
+        response = audit_client.get("/api/audit/verify-chain")
+        assert response.status_code == 200
+        data = response.json()
+        
+        assert "chain_valid" in data
+        assert data["chain_valid"] is True
+    
+    def test_audit_endpoints_unavailable_when_disabled(self, client):
+        """Test audit endpoints return 503 when audit log is disabled."""
+        response = client.get("/api/audit/summary")
+        assert response.status_code == 503
+        
+        response = client.get("/api/audit/commitment/test")
+        assert response.status_code == 503
+        
+        response = client.get("/api/audit/recent")
+        assert response.status_code == 503
+        
+        response = client.get("/api/audit/gaps")
+        assert response.status_code == 503
+        
+        response = client.get("/api/audit/verify-chain")
+        assert response.status_code == 503

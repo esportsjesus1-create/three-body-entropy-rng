@@ -122,7 +122,7 @@ class TestCommitmentDeletionAttack:
         
         MITIGATION: Use transparency-log with append-only audit trail.
         """
-        app = create_app()
+        app = create_app(enable_audit_log=False)
         client = TestClient(app)
         
         # Create commitment
@@ -180,7 +180,7 @@ class TestTimingManipulationAttack:
         
         MITIGATION: Public commitment log with timestamps.
         """
-        app = create_app(commitment_expiry_ms=100)  # 100ms expiry
+        app = create_app(commitment_expiry_ms=100, enable_audit_log=False)  # 100ms expiry
         client = TestClient(app)
         
         # Create commitment
@@ -209,7 +209,7 @@ class TestTimingManipulationAttack:
         
         MITIGATION: Require client_seed in reveal request.
         """
-        app = create_app()
+        app = create_app(enable_audit_log=False)
         client = TestClient(app)
         
         # Create commitment
@@ -297,7 +297,7 @@ class TestReplayAttack:
         
         RESULT: MITIGATED - Commitment is removed after reveal.
         """
-        app = create_app()
+        app = create_app(enable_audit_log=False)
         client = TestClient(app)
         
         # Create commitment
@@ -336,7 +336,7 @@ class TestSequenceGapAttack:
         
         MITIGATION: transparency-log tracks chain_index.
         """
-        app = create_app()
+        app = create_app(enable_audit_log=False)
         client = TestClient(app)
         
         # Create 10 commitments

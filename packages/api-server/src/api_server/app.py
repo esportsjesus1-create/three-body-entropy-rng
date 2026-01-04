@@ -3,12 +3,15 @@ FastAPI application factory.
 
 Creates and configures the FastAPI application with all routes,
 middleware, and dependencies.
+
+Phase C Integration: Now includes transparency-log for audit trail,
+sequence gap detection, and commitment lifecycle tracking.
 """
 
 import time
 import hashlib
 import secrets
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException
@@ -28,6 +31,19 @@ from .models import (
     PublicKeyResponse,
     ErrorResponse,
 )
+
+# Phase C: Import transparency-log for audit trail
+try:
+    from transparency_log import (
+        Database,
+        DatabaseConfig,
+        AuditLog,
+        AuditAction,
+        CommitmentStore as PersistentCommitmentStore,
+    )
+    TRANSPARENCY_LOG_AVAILABLE = True
+except ImportError:
+    TRANSPARENCY_LOG_AVAILABLE = False
 
 
 class CommitmentStore:
@@ -103,6 +119,8 @@ def generate_entropy(seed: str, num_reels: int) -> tuple:
 def create_app(
     rate_limit_config: Optional[RateLimitConfig] = None,
     commitment_expiry_ms: int = 300000,  # 5 minutes
+    db_path: str = ":memory:",  # Phase C: SQLite path for persistence
+    enable_audit_log: bool = True,  # Phase C: Enable audit logging
 ) -> FastAPI:
     """
     Create FastAPI application.
@@ -110,6 +128,8 @@ def create_app(
     Args:
         rate_limit_config: Rate limiting configuration
         commitment_expiry_ms: Commitment expiration time in ms
+        db_path: SQLite database path for transparency-log
+        enable_audit_log: Whether to enable audit logging
         
     Returns:
         Configured FastAPI application
@@ -121,6 +141,19 @@ def create_app(
     health_checker = init_health_checker("1.0.0")
     health_checker.register_component("rate_limiter")
     health_checker.register_component("commitment_store")
+    
+    # Phase C: Initialize transparency-log for audit trail
+    audit_log: Optional[AuditLog] = None
+    database: Optional[Database] = None
+    
+    if TRANSPARENCY_LOG_AVAILABLE and enable_audit_log:
+        try:
+            database = Database(DatabaseConfig(db_path=db_path))
+            database.initialize()
+            audit_log = AuditLog(database)
+            health_checker.register_component("audit_log")
+        except Exception as e:
+            print(f"Warning: Failed to initialize audit log: {e}")
     
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -242,6 +275,19 @@ def create_app(
             "client_seed": request.client_seed,
         })
         
+        # Phase C: Log commitment creation to audit trail
+        if audit_log:
+            audit_log.append(
+                action=AuditAction.COMMIT_CREATED,
+                commitment_hash=commitment_hash,
+                details={
+                    "nonce": nonce,
+                    "timestamp_ms": timestamp_ms,
+                    "expires_ms": expires_ms,
+                    "num_reels": request.num_reels,
+                },
+            )
+        
         return CommitResponse(
             commitment_hash=commitment_hash,
             timestamp_ms=timestamp_ms,
@@ -270,6 +316,13 @@ def create_app(
         current_time = int(time.time() * 1000)
         if current_time > data["expires_ms"]:
             commitment_store.remove(request.commitment_hash)
+            # Phase C: Log expiration to audit trail
+            if audit_log:
+                audit_log.append(
+                    action=AuditAction.COMMIT_EXPIRED,
+                    commitment_hash=request.commitment_hash,
+                    details={"expired_at_ms": current_time},
+                )
             raise HTTPException(
                 status_code=410,
                 detail="Commitment expired",
@@ -288,6 +341,18 @@ def create_app(
         
         # Remove commitment after reveal (single use)
         commitment_store.remove(request.commitment_hash)
+        
+        # Phase C: Log reveal to audit trail
+        if audit_log:
+            audit_log.append(
+                action=AuditAction.COMMIT_REVEALED,
+                commitment_hash=request.commitment_hash,
+                details={
+                    "verified": verified,
+                    "positions": data["positions"],
+                    "reveal_time_ms": current_time,
+                },
+            )
         
         return RevealResponse(
             commitment_hash=request.commitment_hash,
@@ -332,12 +397,108 @@ def create_app(
         elif not timestamp_valid:
             error = f"Commitment too old: {age_ms}ms"
         
+        # Phase C: Log verification to audit trail
+        if audit_log:
+            audit_log.append(
+                action=AuditAction.COMMIT_VERIFIED,
+                commitment_hash=request.commitment_hash,
+                details={
+                    "valid": valid,
+                    "commitment_matches": commitment_matches,
+                    "timestamp_valid": timestamp_valid,
+                },
+            )
+        
         return VerifyResponse(
             valid=valid,
             commitment_matches=commitment_matches,
             timestamp_valid=timestamp_valid,
             error=error,
         )
+    
+    # Phase C: Audit trail endpoints
+    @app.get("/api/audit/summary")
+    async def get_audit_summary():
+        """
+        Get comprehensive audit summary.
+        
+        Returns total entries, action counts, chain validity,
+        and sequence gap detection results.
+        """
+        if not audit_log:
+            raise HTTPException(
+                status_code=503,
+                detail="Audit log not available",
+            )
+        
+        return audit_log.audit_summary()
+    
+    @app.get("/api/audit/commitment/{commitment_hash}")
+    async def get_commitment_lifecycle(commitment_hash: str):
+        """
+        Get full lifecycle of a commitment.
+        
+        Returns all audit entries for a commitment, showing
+        its complete history from creation to resolution.
+        """
+        if not audit_log:
+            raise HTTPException(
+                status_code=503,
+                detail="Audit log not available",
+            )
+        
+        return audit_log.get_commitment_lifecycle(commitment_hash)
+    
+    @app.get("/api/audit/recent")
+    async def get_recent_audit_entries(limit: int = 100):
+        """
+        Get recent audit log entries.
+        
+        Args:
+            limit: Maximum entries to return (default 100)
+        """
+        if not audit_log:
+            raise HTTPException(
+                status_code=503,
+                detail="Audit log not available",
+            )
+        
+        entries = audit_log.list_recent(limit=min(limit, 1000))
+        return {"entries": [e.to_dict() for e in entries]}
+    
+    @app.get("/api/audit/gaps")
+    async def detect_sequence_gaps():
+        """
+        Detect gaps in commitment sequence.
+        
+        Analyzes the audit log to find commitments that were created
+        but never revealed or expired. This helps detect if an operator
+        is selectively hiding unfavorable outcomes.
+        """
+        if not audit_log:
+            raise HTTPException(
+                status_code=503,
+                detail="Audit log not available",
+            )
+        
+        return audit_log.detect_sequence_gaps()
+    
+    @app.get("/api/audit/verify-chain")
+    async def verify_audit_chain():
+        """
+        Verify hash chain integrity.
+        
+        Returns True if the audit log hash chain is intact,
+        False if any tampering is detected.
+        """
+        if not audit_log:
+            raise HTTPException(
+                status_code=503,
+                detail="Audit log not available",
+            )
+        
+        chain_valid = audit_log.verify_chain()
+        return {"chain_valid": chain_valid}
     
     @app.get("/public-key", response_model=PublicKeyResponse)
     async def get_public_key():
@@ -356,5 +517,7 @@ def create_app(
     app.state.rate_limiter = rate_limiter
     app.state.commitment_store = commitment_store
     app.state.health_checker = health_checker
+    app.state.audit_log = audit_log  # Phase C
+    app.state.database = database  # Phase C
     
     return app

@@ -534,6 +534,19 @@ anyio = ">=3.4.0,<5"
 full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7)", "pyyaml"]
 
 [[package]]
+name = "transparency-log"
+version = "1.0.0"
+description = "SQLite-backed transparency log for Three-Body RNG commitments"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../transparency-log"
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 description = "Backported and Experimental Type Hints for Python 3.9+"
@@ -579,4 +592,4 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "914fd43d22603fad331c9a6a4a81ae4f26f5285bc819e7ac1acd771c8f4e60c3"
+content-hash = "614d2d5270ea78a8dc32ec4cd9df196ab0b1b51546b664a3bcf137563185daa1"
