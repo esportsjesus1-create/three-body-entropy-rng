@@ -7,8 +7,8 @@ export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: "#games", label: "Our Games" },
-    { href: "#why-fair", label: "Why Fair?" },
+    { href: "/kiro-demo", label: "Play Demo" },
+    { href: "/provably-fair", label: "How It Works" },
     { href: "/verify", label: "Verify Spin" },
   ];
 
