@@ -8,6 +8,7 @@ export default function Navigation() {
 
   const navLinks = [
     { href: "/kiro-demo", label: "Play Demo" },
+    { href: "/education", label: "Learn" },
     { href: "/provably-fair", label: "How It Works" },
     { href: "/verify", label: "Verify Spin" },
   ];
