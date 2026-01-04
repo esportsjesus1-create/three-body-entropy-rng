@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import SlotMachine from "@/components/demo/SlotMachine";
 import RNGProofView from "@/components/demo/RNGProofView";
+import AuditTrailView from "@/components/demo/AuditTrailView";
 import { SpinResult, PendingCommitment, generatePendingCommitment, executeSpinFromCommitment } from "@/lib/demoEngine";
 
 type ViewMode = "gameplay" | "proof";
@@ -116,6 +117,11 @@ export default function KiroDemoPage() {
             spinHistory={spinHistory}
           />
         )}
+
+        {/* Phase C: Audit Trail Display */}
+        <div className="mt-8 max-w-2xl mx-auto">
+          <AuditTrailView />
+        </div>
 
         <div className="mt-12 max-w-4xl mx-auto">
           <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
