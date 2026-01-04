@@ -209,7 +209,7 @@ class TestTimingManipulationAttack:
         
         MITIGATION: Require client_seed in reveal request.
         """
-        app = create_app(enable_audit_log=False)
+        app = create_app(enable_audit_log=False, min_commit_reveal_delay_ms=0)
         client = TestClient(app)
         
         # Create commitment
@@ -221,12 +221,52 @@ class TestTimingManipulationAttack:
             "commitment_hash": commitment_hash,
         })
         
-        # API allows this - vulnerability!
+        # API allows this when min_commit_reveal_delay_ms=0
         assert response.status_code == 200
         
         print(f"\n[VULNERABILITY] Can reveal without player input!")
         print(f"API doesn't enforce commit-before-input protocol")
         print(f"MITIGATION: Require client_seed in reveal request")
+    
+    def test_commit_before_input_timing_enforcement(self):
+        """
+        Phase C TASK 3: Test commit-before-input timing enforcement.
+        
+        RESULT: MITIGATED - API now enforces minimum delay between commit and reveal.
+        This prevents timing attacks where operator reveals immediately after commit.
+        """
+        # Create app with 100ms minimum delay
+        app = create_app(enable_audit_log=False, min_commit_reveal_delay_ms=100)
+        client = TestClient(app)
+        
+        # Create commitment
+        response = client.post("/commit", json={"num_reels": 5})
+        assert response.status_code == 200
+        commitment_hash = response.json()["commitment_hash"]
+        
+        # Immediately try to reveal (should fail - too soon)
+        response = client.post("/reveal", json={
+            "commitment_hash": commitment_hash,
+        })
+        
+        # Should get 425 Too Early
+        assert response.status_code == 425
+        assert "too soon" in response.json()["message"].lower()
+        
+        print(f"\n[MITIGATED] Commit-before-input timing enforced!")
+        print(f"Reveal rejected - commitment too new")
+        print(f"Must wait at least 100ms between commit and reveal")
+        
+        # Wait for minimum delay
+        time.sleep(0.15)
+        
+        # Now reveal should succeed
+        response = client.post("/reveal", json={
+            "commitment_hash": commitment_hash,
+        })
+        assert response.status_code == 200
+        
+        print(f"[SECURE] Reveal succeeded after waiting")
 
 
 class TestNonceManipulationAttack:
@@ -297,7 +337,7 @@ class TestReplayAttack:
         
         RESULT: MITIGATED - Commitment is removed after reveal.
         """
-        app = create_app(enable_audit_log=False)
+        app = create_app(enable_audit_log=False, min_commit_reveal_delay_ms=0)
         client = TestClient(app)
         
         # Create commitment

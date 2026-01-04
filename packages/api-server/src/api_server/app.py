@@ -121,6 +121,7 @@ def create_app(
     commitment_expiry_ms: int = 300000,  # 5 minutes
     db_path: str = ":memory:",  # Phase C: SQLite path for persistence
     enable_audit_log: bool = True,  # Phase C: Enable audit logging
+    min_commit_reveal_delay_ms: int = 100,  # Phase C TASK 3: Minimum delay between commit and reveal
 ) -> FastAPI:
     """
     Create FastAPI application.
@@ -130,6 +131,8 @@ def create_app(
         commitment_expiry_ms: Commitment expiration time in ms
         db_path: SQLite database path for transparency-log
         enable_audit_log: Whether to enable audit logging
+        min_commit_reveal_delay_ms: Minimum time between commit and reveal (default 100ms)
+            This prevents timing attacks where operator reveals immediately after commit.
         
     Returns:
         Configured FastAPI application
@@ -302,6 +305,9 @@ def create_app(
         
         After the player provides their input, reveal the
         committed data so they can verify the result.
+        
+        Phase C TASK 3: Enforces commit-before-input protocol with timing checks.
+        Commitment must exist for at least min_commit_reveal_delay_ms before reveal.
         """
         # Get stored commitment
         data = commitment_store.get(request.commitment_hash)
@@ -312,8 +318,30 @@ def create_app(
                 detail="Commitment not found",
             )
         
-        # Check expiration
+        # Phase C TASK 3: Check minimum delay between commit and reveal
+        # This prevents timing attacks where operator reveals immediately after commit
         current_time = int(time.time() * 1000)
+        time_since_commit = current_time - data["timestamp_ms"]
+        
+        if time_since_commit < min_commit_reveal_delay_ms:
+            # Log timing violation to audit trail
+            if audit_log:
+                audit_log.append(
+                    action=AuditAction.COMMIT_VERIFIED,  # Using VERIFIED as closest action type
+                    commitment_hash=request.commitment_hash,
+                    details={
+                        "error": "timing_violation",
+                        "time_since_commit_ms": time_since_commit,
+                        "min_required_ms": min_commit_reveal_delay_ms,
+                    },
+                )
+            raise HTTPException(
+                status_code=425,  # Too Early
+                detail=f"Reveal too soon. Commitment must be at least {min_commit_reveal_delay_ms}ms old. "
+                       f"Current age: {time_since_commit}ms. Wait {min_commit_reveal_delay_ms - time_since_commit}ms.",
+            )
+        
+        # Check expiration
         if current_time > data["expires_ms"]:
             commitment_store.remove(request.commitment_hash)
             # Phase C: Log expiration to audit trail

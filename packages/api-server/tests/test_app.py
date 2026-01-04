@@ -15,6 +15,7 @@ def client():
             burst_size=100,
         ),
         enable_audit_log=False,  # Disable audit log for basic tests
+        min_commit_reveal_delay_ms=0,  # Disable timing check for basic tests
     )
     return TestClient(app)
 
@@ -28,6 +29,7 @@ def strict_rate_limit_client():
             burst_size=2,
         ),
         enable_audit_log=False,  # Disable audit log for basic tests
+        min_commit_reveal_delay_ms=0,  # Disable timing check for basic tests
     )
     return TestClient(app)
 
