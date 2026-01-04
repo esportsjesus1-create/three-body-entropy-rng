@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import SlotMachine from "@/components/demo/SlotMachine";
 import RNGProofView from "@/components/demo/RNGProofView";
-import { SpinResult, generateDemoSpin } from "@/lib/demoEngine";
+import { SpinResult, PendingCommitment, generatePendingCommitment, executeSpinFromCommitment } from "@/lib/demoEngine";
 
 type ViewMode = "gameplay" | "proof";
 
@@ -15,10 +15,7 @@ export default function KiroDemoPage() {
   const [currentSpin, setCurrentSpin] = useState<SpinResult | null>(null);
   const [spinHistory, setSpinHistory] = useState<SpinResult[]>([]);
   const [clientSeed, setClientSeed] = useState("");
-
-  useEffect(() => {
-    setClientSeed(generateRandomClientSeed());
-  }, []);
+  const [pendingCommitment, setPendingCommitment] = useState<PendingCommitment | null>(null);
 
   const generateRandomClientSeed = () => {
     const array = new Uint8Array(16);
@@ -30,14 +27,19 @@ export default function KiroDemoPage() {
       .join("");
   };
 
+  useEffect(() => {
+    setClientSeed(generateRandomClientSeed());
+    generatePendingCommitment().then(setPendingCommitment);
+  }, []);
+
   const handleSpin = useCallback(async () => {
-    if (isSpinning || balance < betAmount) return;
+    if (isSpinning || balance < betAmount || !pendingCommitment) return;
 
     setIsSpinning(true);
     setBalance((prev) => prev - betAmount);
 
     const nonce = spinHistory.length + 1;
-    const spinResult = await generateDemoSpin(clientSeed, nonce, betAmount);
+    const spinResult = await executeSpinFromCommitment(pendingCommitment, clientSeed, nonce, betAmount);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -45,10 +47,17 @@ export default function KiroDemoPage() {
     setSpinHistory((prev) => [spinResult, ...prev]);
     setBalance((prev) => prev + spinResult.winAmount);
     setIsSpinning(false);
-  }, [isSpinning, balance, betAmount, clientSeed, spinHistory.length]);
+    
+    const newCommitment = await generatePendingCommitment();
+    setPendingCommitment(newCommitment);
+  }, [isSpinning, balance, betAmount, clientSeed, spinHistory.length, pendingCommitment]);
 
   const handleNewClientSeed = useCallback(() => {
     setClientSeed(generateRandomClientSeed());
+  }, []);
+
+  const handleViewDetails = useCallback(() => {
+    setViewMode("proof");
   }, []);
 
   return (
@@ -97,12 +106,13 @@ export default function KiroDemoPage() {
             onSpin={handleSpin}
             clientSeed={clientSeed}
             onNewClientSeed={handleNewClientSeed}
+            pendingCommitment={pendingCommitment}
+            onViewDetails={handleViewDetails}
           />
         ) : (
           <RNGProofView
             currentSpin={currentSpin}
             spinHistory={spinHistory}
-            clientSeed={clientSeed}
           />
         )}
 
