@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "crypto-service"
+version = "1.0.0"
+description = "RSA-4096 digital signatures and HKDF-SHA256 entropy mixing for Three-Body RNG"
+authors = ["Three-Body RNG Team"]
+readme = "README.md"
+packages = [{include = "crypto_service", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+cryptography = "^42.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+
+[tool.poetry.scripts]
+crypto-cli = "crypto_service.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=crypto_service --cov-report=term-missing --cov-fail-under=90"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

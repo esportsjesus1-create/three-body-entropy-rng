@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "api-server"
+version = "1.0.0"
+description = "FastAPI server for Three-Body RNG with rate limiting and health checks"
+authors = ["Three-Body RNG Team"]
+readme = "README.md"
+packages = [{include = "api_server", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.109.0"
+uvicorn = "^0.27.0"
+pydantic = "^2.5.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-asyncio = "^0.23.0"
+httpx = "^0.26.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=api_server --cov-report=term-missing --cov-fail-under=90"
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

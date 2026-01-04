@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "commitment-protocol"
+version = "1.0.0"
+description = "Commit/reveal protocol for provably fair Three-Body RNG"
+authors = ["Three-Body RNG Team"]
+readme = "README.md"
+packages = [{include = "commitment_protocol", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=commitment_protocol --cov-report=term-missing --cov-fail-under=90"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
