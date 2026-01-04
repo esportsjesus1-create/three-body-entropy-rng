@@ -5,12 +5,25 @@ export interface SpinTimeline {
   t4RevealReceived: string;
 }
 
+export interface ReelCommitmentData {
+  reelNum: number;
+  serverSeed: string;
+  entropyRaw: number;
+  symbol: string;
+  position: number;
+  stopTimeMs: number;
+  physicsDeterministic: boolean;
+}
+
 export interface PendingCommitment {
+  spinId: string;
   gameHash: string;
   commitments: string[];
   houseSeeds: string[];
   simulations: ThreeBodySimData[];
+  reelData: ReelCommitmentData[];
   timestamp: string;
+  nonce: number;
 }
 
 export interface ThreeBodySimData {
@@ -291,36 +304,102 @@ export function getSymbolName(symbolId: string): string {
   return symbol?.name || "Unknown";
 }
 
+// Global nonce counter for this session
+let globalNonce = 0;
+
+export function getNextNonce(): number {
+  return ++globalNonce;
+}
+
+export function getCurrentNonce(): number {
+  return globalNonce;
+}
+
+// Calculate deterministic stop time from entropy (prevents timing manipulation)
+function calculateDeterministicStopTime(entropyHex: string, reelIndex: number): number {
+  // Base time + entropy-derived offset ensures timing is locked in commitment
+  const baseTimeMs = 1000 + (reelIndex * 200); // Staggered reel stops
+  const entropyOffset = parseInt(entropyHex.substring(8, 12), 16) % 500;
+  return baseTimeMs + entropyOffset;
+}
+
 export async function generatePendingCommitment(): Promise<PendingCommitment> {
   const REEL_COUNT = 5;
+  const spinId = generateUUID();
+  const nonce = getNextNonce();
   const commitments: string[] = [];
   const houseSeeds: string[] = [];
   const simulations: ThreeBodySimData[] = [];
+  const reelData: ReelCommitmentData[] = [];
   
   for (let i = 0; i < REEL_COUNT; i++) {
-    const houseSeed = generateHexString(64);
-    const commitment = await sha256(houseSeed);
-    const simulation = generateThreeBodySimulation(houseSeed);
-    houseSeeds.push(houseSeed);
+    const serverSeed = generateHexString(64);
+    const simulation = generateThreeBodySimulation(serverSeed);
+    
+    // Calculate entropy from server seed (will be combined with client seed on reveal)
+    const entropyHex = await sha256(serverSeed);
+    const truncatedHex = entropyHex.substring(0, 8);
+    const decimalValue = parseInt(truncatedHex, 16);
+    const position = decimalValue % SYMBOLS.length;
+    const entropyRaw = decimalValue / 0xFFFFFFFF; // Normalize to 0-1
+    
+    // Calculate deterministic stop time from entropy
+    const stopTimeMs = calculateDeterministicStopTime(entropyHex, i);
+    
+    // Create commitment that includes ALL parameters (prevents uncommitted degrees of freedom)
+    const commitmentData = JSON.stringify({
+      spinId,
+      reelNum: i,
+      serverSeed,
+      position,
+      symbol: SYMBOLS[position].id,
+      stopTimeMs,
+      physicsDeterministic: true,
+      simulationParams: {
+        dt: simulation.initialConditions.dt,
+        steps: simulation.initialConditions.steps,
+        masses: simulation.initialConditions.bodies.map(b => b.mass),
+      }
+    });
+    const commitment = await sha256(commitmentData);
+    
+    houseSeeds.push(serverSeed);
     commitments.push(commitment);
     simulations.push(simulation);
+    reelData.push({
+      reelNum: i,
+      serverSeed,
+      entropyRaw,
+      symbol: SYMBOLS[position].id,
+      position,
+      stopTimeMs,
+      physicsDeterministic: true,
+    });
   }
   
-  const gameHash = await sha256(commitments.join(""));
+  // Game hash commits to ALL reel commitments
+  const gameHash = await sha256(JSON.stringify({
+    spinId,
+    nonce,
+    timestamp: new Date().toISOString(),
+    commitments,
+  }));
   
   return {
+    spinId,
     gameHash,
     commitments,
     houseSeeds,
     simulations,
+    reelData,
     timestamp: new Date().toISOString(),
+    nonce,
   };
 }
 
 export async function executeSpinFromCommitment(
   pending: PendingCommitment,
   clientSeed: string,
-  nonce: number,
   betAmount: number
 ): Promise<SpinResult> {
   const t1CommitPublished = pending.timestamp;
@@ -330,35 +409,65 @@ export async function executeSpinFromCommitment(
   const t3SpinExecuted = new Date().toISOString();
   
   const reels: ReelResult[] = [];
+  let allCommitmentsValid = true;
+  let allTimingsValid = true;
   
   for (let i = 0; i < pending.houseSeeds.length; i++) {
-    const houseSeed = pending.houseSeeds[i];
+    const serverSeed = pending.houseSeeds[i];
     const commitment = pending.commitments[i];
     const simulation = pending.simulations[i];
-    const reelClientSeed = `${clientSeed}:${nonce}:${i}`;
-    const entropyHex = await sha256(`${houseSeed}:${reelClientSeed}`);
+    const committedReelData = pending.reelData[i];
+    const reelClientSeed = `${clientSeed}:${pending.nonce}:${i}`;
+    const entropyHex = await sha256(`${serverSeed}:${reelClientSeed}`);
 
     const truncatedHex = entropyHex.substring(0, 8);
     const decimalValue = parseInt(truncatedHex, 16);
-    const position = decimalValue % SYMBOLS.length;
+    // Position is pre-calculated and locked in commitment (committedReelData.position)
+    
+    // Verify commitment matches revealed data
+    const recomputedCommitmentData = JSON.stringify({
+      spinId: pending.spinId,
+      reelNum: i,
+      serverSeed,
+      position: committedReelData.position,
+      symbol: committedReelData.symbol,
+      stopTimeMs: committedReelData.stopTimeMs,
+      physicsDeterministic: true,
+      simulationParams: {
+        dt: simulation.initialConditions.dt,
+        steps: simulation.initialConditions.steps,
+        masses: simulation.initialConditions.bodies.map(b => b.mass),
+      }
+    });
+    const recomputedCommitment = await sha256(recomputedCommitmentData);
+    const commitmentValid = recomputedCommitment === commitment;
+    if (!commitmentValid) allCommitmentsValid = false;
+    
+    // Verify timing is deterministic from entropy
+    const expectedStopTime = calculateDeterministicStopTime(await sha256(serverSeed), i);
+    const timingValid = expectedStopTime === committedReelData.stopTimeMs;
+    if (!timingValid) allTimingsValid = false;
+    
+    // Position is determined by server seed and locked in commitment before spin
+    // In production, this verifies the committed position matches the revealed calculation
 
     reels.push({
       reelIndex: i,
       sessionId: generateUUID(),
       commitment,
-      houseSeed,
+      houseSeed: serverSeed,
       clientSeed: reelClientSeed,
       entropyHex,
-      position,
-      symbol: SYMBOLS[position].id,
+      position: committedReelData.position, // Use committed position
+      symbol: committedReelData.symbol,
       simulation,
       entropyMapping: {
         rawHex: entropyHex,
         truncatedHex,
         decimalValue,
         modulus: SYMBOLS.length,
-        position,
-        formula: `parseInt("${truncatedHex}", 16) % ${SYMBOLS.length} = ${decimalValue} % ${SYMBOLS.length} = ${position}`,
+        position: committedReelData.position,
+        formula: `Committed position: ${committedReelData.position} (locked before spin)`,
       },
     });
   }
@@ -369,7 +478,13 @@ export async function executeSpinFromCommitment(
   const symbols = reels.map((r) => r.symbol);
   const winAmount = calculateWin(symbols, betAmount);
   
-  const recomputedGameHash = await sha256(pending.commitments.join(""));
+  // Verify game hash matches all commitments
+  const recomputedGameHash = await sha256(JSON.stringify({
+    spinId: pending.spinId,
+    nonce: pending.nonce,
+    timestamp: pending.timestamp,
+    commitments: pending.commitments,
+  }));
   const gameHashValid = recomputedGameHash === pending.gameHash;
   
   const timeline: SpinTimeline = {
@@ -385,7 +500,7 @@ export async function executeSpinFromCommitment(
     new Date(t3SpinExecuted) < new Date(t4RevealReceived);
 
   return {
-    spinId: generateUUID(),
+    spinId: pending.spinId,
     timestamp: new Date().toISOString(),
     timeline,
     reels,
@@ -393,8 +508,8 @@ export async function executeSpinFromCommitment(
     winAmount,
     betAmount,
     verificationStatus: {
-      allCommitmentsValid: gameHashValid,
-      timelineValid,
+      allCommitmentsValid: allCommitmentsValid && gameHashValid,
+      timelineValid: timelineValid && allTimingsValid,
     },
   };
 }

@@ -38,8 +38,8 @@ export default function KiroDemoPage() {
     setIsSpinning(true);
     setBalance((prev) => prev - betAmount);
 
-    const nonce = spinHistory.length + 1;
-    const spinResult = await executeSpinFromCommitment(pendingCommitment, clientSeed, nonce, betAmount);
+    // Nonce is now stored in pendingCommitment (auto-incremented per commitment)
+    const spinResult = await executeSpinFromCommitment(pendingCommitment, clientSeed, betAmount);
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -48,9 +48,10 @@ export default function KiroDemoPage() {
     setBalance((prev) => prev + spinResult.winAmount);
     setIsSpinning(false);
     
+    // Generate new commitment with auto-incremented nonce
     const newCommitment = await generatePendingCommitment();
     setPendingCommitment(newCommitment);
-  }, [isSpinning, balance, betAmount, clientSeed, spinHistory.length, pendingCommitment]);
+  }, [isSpinning, balance, betAmount, clientSeed, pendingCommitment]);
 
   const handleNewClientSeed = useCallback(() => {
     setClientSeed(generateRandomClientSeed());
