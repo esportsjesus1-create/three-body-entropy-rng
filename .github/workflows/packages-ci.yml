@@ -1,0 +1,181 @@
+name: Packages CI
+
+on:
+  push:
+    branches: [main, devin/*]
+    paths:
+      - 'packages/**'
+      - '.github/workflows/packages-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/**'
+      - '.github/workflows/packages-ci.yml'
+
+jobs:
+  crypto-service:
+    name: Test crypto-service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/crypto-service
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Poetry
+        run: pip install poetry
+      
+      - name: Install dependencies
+        run: poetry install
+      
+      - name: Run tests with coverage
+        run: poetry run pytest -v --cov-report=xml
+      
+      - name: Check coverage threshold (90%)
+        run: poetry run pytest --cov-fail-under=90
+
+  physics-engine:
+    name: Test physics-engine
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/physics-engine
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Poetry
+        run: pip install poetry
+      
+      - name: Install dependencies
+        run: poetry install
+      
+      - name: Run tests with coverage
+        run: poetry run pytest -v --cov-report=xml
+      
+      - name: Check coverage threshold (90%)
+        run: poetry run pytest --cov-fail-under=90
+      
+      - name: Verify golden vectors
+        run: poetry run python -c "from physics_engine.golden_vectors import verify_golden_vectors; result = verify_golden_vectors(); assert result['all_passed'], f'Golden vectors failed: {result}'"
+
+  commitment-protocol:
+    name: Test commitment-protocol
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/commitment-protocol
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Poetry
+        run: pip install poetry
+      
+      - name: Install dependencies
+        run: poetry install
+      
+      - name: Run tests with coverage
+        run: poetry run pytest -v --cov-report=xml
+      
+      - name: Check coverage threshold (90%)
+        run: poetry run pytest --cov-fail-under=90
+
+  api-server:
+    name: Test api-server
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/api-server
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Poetry
+        run: pip install poetry
+      
+      - name: Install dependencies
+        run: poetry install
+      
+      - name: Run tests with coverage
+        run: poetry run pytest -v --cov-report=xml
+      
+      - name: Check coverage threshold (90%)
+        run: poetry run pytest --cov-fail-under=90
+
+  transparency-log:
+    name: Test transparency-log
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/transparency-log
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Poetry
+        run: pip install poetry
+      
+      - name: Install dependencies
+        run: poetry install
+      
+      - name: Run tests with coverage
+        run: poetry run pytest -v --cov-report=xml
+      
+      - name: Check coverage threshold (90%)
+        run: poetry run pytest --cov-fail-under=90
+
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [crypto-service, physics-engine, commitment-protocol, api-server, transparency-log]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      
+      - name: Install Poetry
+        run: pip install poetry
+      
+      - name: Install all packages
+        run: |
+          cd packages/crypto-service && poetry install && cd ../..
+          cd packages/physics-engine && poetry install && cd ../..
+          cd packages/commitment-protocol && poetry install && cd ../..
+          cd packages/api-server && poetry install && cd ../..
+          cd packages/transparency-log && poetry install && cd ../..
+      
+      - name: Run integration smoke test
+        run: |
+          cd packages/physics-engine
+          poetry run python -c "
+          from physics_engine import generate_entropy_from_seed
+          result = generate_entropy_from_seed('0' * 64)
+          assert 'entropy_hex' in result
+          assert 'theta' in result
+          print('Integration smoke test passed!')
+          "

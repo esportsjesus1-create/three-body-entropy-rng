@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "verification-tools"
+version = "1.0.0"
+description = "Standalone verification tools for Three-Body RNG game outcomes"
+authors = ["Three-Body RNG Team"]
+readme = "README.md"
+packages = [{include = "verification_tools", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=verification_tools --cov-report=term-missing --cov-fail-under=90"

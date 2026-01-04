@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "transparency-log"
+version = "1.0.0"
+description = "SQLite-backed transparency log for Three-Body RNG commitments"
+authors = ["Three-Body RNG Team"]
+readme = "README.md"
+packages = [{include = "transparency_log", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=transparency_log --cov-report=term-missing --cov-fail-under=90"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
