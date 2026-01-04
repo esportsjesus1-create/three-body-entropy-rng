@@ -47,26 +47,69 @@ export default function EducationPage() {
             </p>
           </div>
 
-          <div className="bg-secondary-bg rounded-xl p-6 mb-8">
+          <div className="bg-gradient-to-r from-purple-900/40 to-pink-900/40 rounded-xl p-6 mb-8 border border-purple-500/30">
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-purple-600/20 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-purple-600/30 flex items-center justify-center">
                 <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 001.414 1.414m2.828-9.9a9 9 0 0112.728 0" />
                 </svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white">Audio Explanation</h2>
-                <p className="text-sm text-text-secondary">Listen to a detailed explanation of how Three-Body RNG works</p>
+                <h2 className="text-xl font-bold text-white">Audio Deep Dive</h2>
+                <p className="text-sm text-text-secondary">Listen to a 12-minute podcast explaining Three-Body RNG</p>
               </div>
             </div>
-            <div className="bg-primary-bg rounded-lg p-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-700">
-              <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-              <p className="text-text-secondary text-center mb-2">Audio explanation coming soon</p>
-              <p className="text-xs text-gray-500 text-center">
-                A podcast-style narration explaining the physics, cryptography, and verification process
-              </p>
+            <div className="bg-primary-bg/80 rounded-lg p-6">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <a
+                  href="https://notebooklm.google.com/notebook/82cb4928-089c-42e3-a777-60fa80fd8cf8/audio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-20 h-20 rounded-full bg-purple-600 hover:bg-purple-500 flex items-center justify-center transition-all hover:scale-105 shadow-lg shadow-purple-600/30 flex-shrink-0"
+                >
+                  <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </a>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    Understanding Three-Body Entropy RNG
+                  </h3>
+                  <p className="text-sm text-text-secondary mb-3">
+                    Two AI hosts discuss the physics, cryptography, and verification process 
+                    behind provably fair gaming. Perfect for learning while exploring the interactive demos.
+                  </p>
+                  <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                    <span className="text-xs bg-purple-600/20 text-purple-300 px-3 py-1 rounded-full">
+                      12:48 duration
+                    </span>
+                    <span className="text-xs bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full">
+                      Podcast format
+                    </span>
+                    <span className="text-xs bg-green-600/20 text-green-300 px-3 py-1 rounded-full">
+                      Powered by NotebookLM
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-700 flex flex-col sm:flex-row gap-3 justify-center">
+                <a
+                  href="https://notebooklm.google.com/notebook/82cb4928-089c-42e3-a777-60fa80fd8cf8/audio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary text-center"
+                >
+                  Listen Now
+                </a>
+                <a
+                  href="https://notebooklm.google.com/notebook/82cb4928-089c-42e3-a777-60fa80fd8cf8/audio"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-secondary text-center"
+                >
+                  Open in NotebookLM
+                </a>
+              </div>
             </div>
           </div>
 
