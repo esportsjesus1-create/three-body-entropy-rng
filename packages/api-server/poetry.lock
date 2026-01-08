@@ -281,6 +281,19 @@ files = [
 ]
 
 [[package]]
+name = "physics-engine"
+version = "1.0.0"
+description = "Three-body RK4 physics simulation for deterministic entropy generation"
+optional = false
+python-versions = "^3.11"
+files = []
+develop = true
+
+[package.source]
+type = "directory"
+url = "../physics-engine"
+
+[[package]]
 name = "pluggy"
 version = "1.6.0"
 description = "plugin and hook calling mechanisms for python"
@@ -592,4 +605,4 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "614d2d5270ea78a8dc32ec4cd9df196ab0b1b51546b664a3bcf137563185daa1"
+content-hash = "f23e1c4b9a1330c1d4ee2b35bd993f736602db7ffb511977513e4d81da23b40e"

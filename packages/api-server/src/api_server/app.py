@@ -45,6 +45,13 @@ try:
 except ImportError:
     TRANSPARENCY_LOG_AVAILABLE = False
 
+# Import physics-engine for real three-body entropy generation
+try:
+    from physics_engine import generate_entropy_from_seed, SimulationParams
+    PHYSICS_ENGINE_AVAILABLE = True
+except ImportError:
+    PHYSICS_ENGINE_AVAILABLE = False
+
 
 class CommitmentStore:
     """
@@ -97,13 +104,48 @@ def compute_commitment_hash(
 
 def generate_entropy(seed: str, num_reels: int) -> tuple:
     """
-    Generate entropy and positions.
+    Generate entropy and positions using real three-body physics simulation.
     
-    Note: For production, use physics-engine module.
-    This is a simplified version for standalone testing.
+    Uses the physics-engine module for deterministic RK4 three-body simulation.
+    Falls back to SHA256 only if physics-engine is not available.
+    
+    Args:
+        seed: Server seed (hex string from secrets.token_hex)
+        num_reels: Number of reel positions to generate
+        
+    Returns:
+        Tuple of (entropy_hex, positions)
     """
-    # Generate deterministic entropy from seed
-    entropy = hashlib.sha256(seed.encode('utf-8')).hexdigest()
+    if PHYSICS_ENGINE_AVAILABLE:
+        # Use real three-body physics simulation
+        # Configure simulation parameters for good entropy with reasonable performance
+        # Using 500 steps provides good chaos while keeping API response time < 500ms
+        params = SimulationParams(
+            dt=0.001,      # Time step
+            steps=500,     # Number of integration steps (optimized for API performance)
+            G=1.0,         # Gravitational constant
+            softening=0.01 # Softening parameter
+        )
+        
+        # Ensure seed is valid hex - if not, hash it to get hex
+        try:
+            # Validate hex format
+            bytes.fromhex(seed[:32] if len(seed) >= 32 else seed.ljust(32, '0'))
+            seed_hex = seed
+        except ValueError:
+            # Convert non-hex seed to hex via SHA256
+            seed_hex = hashlib.sha256(seed.encode('utf-8')).hexdigest()
+        
+        # Run physics simulation to generate entropy
+        result = generate_entropy_from_seed(seed_hex, params)
+        entropy = result["entropy_hex"]
+        
+        # Log that we're using real physics (for debugging/verification)
+        print(f"Physics simulation: {params.steps} steps completed, theta={result['theta_normalized']:.6f}")
+    else:
+        # Fallback to SHA256 if physics-engine not available
+        print("WARNING: Using SHA256 fallback - physics-engine not available")
+        entropy = hashlib.sha256(seed.encode('utf-8')).hexdigest()
     
     # Derive positions from entropy
     positions = []
