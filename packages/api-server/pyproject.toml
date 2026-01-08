@@ -12,6 +12,7 @@ fastapi = "^0.109.0"
 uvicorn = "^0.27.0"
 pydantic = "^2.5.0"
 transparency-log = {path = "../transparency-log", develop = true}
+physics-engine = {path = "../physics-engine", develop = true}
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
